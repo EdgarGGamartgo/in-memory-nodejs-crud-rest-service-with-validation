@@ -8,7 +8,7 @@
     "pub": "git add . && git commit -m \"Updates\" && git push && git status"
   },
   "keywords": [],
-  "author": "",
+  "author": "Edgar Martinez",
   "license": "ISC",
   "dependencies": {
     "@oregtickets/common": "^1.0.4",
