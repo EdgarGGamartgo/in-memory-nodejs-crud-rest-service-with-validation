@@ -23,7 +23,7 @@ router.get('/api/users/:mode',
                     throw new BadRequestError('mode must be true, false or all')
                 }
             })
-            .withMessage('You must supply a valid UUID')
+            .withMessage('You must supply a valid mode')
     ],
     validateRequest,
     async (req: Request, res: Response) => {
