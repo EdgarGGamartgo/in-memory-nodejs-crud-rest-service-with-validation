@@ -1,4 +1,4 @@
-type UserAttrs = {
+export type UserAttrs = {
     id: string;
     login: string;
     password: string;

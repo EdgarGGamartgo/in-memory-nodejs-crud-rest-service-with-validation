@@ -1,8 +1,10 @@
 import express, { Request, Response } from 'express'
-import { body, param } from 'express-validator'
+import { body, param, query } from 'express-validator'
 import { BadRequestError, validateRequest } from '@oregtickets/common'
-import { User } from './../models/User'
+import { User, UserAttrs } from './../models/User'
 import { v4 as uuidv4 } from 'uuid';
+import { isDate } from './../services/isDate'
+import { getAutoSuggestUsers, sortByLogin } from './../services/getAutoSuggestUsers'
 
 const router = express.Router()
 
@@ -39,8 +41,56 @@ router.get('/api/users/:mode',
         }
     })
 
-router.get('/api/user-auto-suggest', async (req: Request, res: Response) => {
-    res.status(200).send('auto-suggest')
+router.get('/api/user-auto-suggest', [
+    query('sort')
+        .trim()
+        .notEmpty()
+        .isString()
+        .custom(sort => {
+            if (sort === 'oldest') {
+                return true
+            } else if (sort === 'newest') {
+                return true
+            } else {
+                throw new BadRequestError('sort must be oldest or newest')
+            }
+        })
+        .withMessage('You must supply a valid sort'),
+    query('limit')
+        .trim()
+        .notEmpty()
+        .isNumeric()
+        .custom(limit => {
+            if (limit >= 0) {
+                return true
+            } else {
+                throw new BadRequestError('limit must be greater or equal than 0')
+            }
+        })
+        .withMessage('You must supply a valid numeric limit greater or equal than 0'),
+     query('filter')
+        .trim()
+        .notEmpty()
+        .isString()
+        .custom(date => {
+            if (isDate(date) || (date.length > 0 && date.length <= 4 && Number.isInteger(+date))) {
+                return true
+            } else {
+                throw new BadRequestError('filter must be a valid date ISOString Date or just a numeric year')
+            }
+        })
+        .withMessage('You must supply a valid date for filter')   
+],
+validateRequest,
+async (req: Request, res: Response) => {
+    const { sort, filter, limit } = req.query
+    try {
+        const filteredUsers: UserAttrs[] = getAutoSuggestUsers(filter as string, +limit!)
+        const users: UserAttrs[] = sortByLogin(sort as string, filteredUsers)
+        res.status(200).send(users)
+    } catch (e) {
+        throw new BadRequestError('User does not exist!!!');
+    }
 })
 
 router.get('/api/user/:id',
@@ -70,6 +120,13 @@ router.post('/api/user', [
         .trim()
         .notEmpty()
         .isString()
+        .custom(date => {
+            if (isDate(date)) {
+                return true
+            } else {
+                throw new BadRequestError('login must be a valid date')
+            }
+        })
         .withMessage('You must supply login'),
     body('password')
         .trim()
@@ -117,6 +174,13 @@ router.put('/api/user', [
         .trim()
         .notEmpty()
         .isString()
+        .custom(date => {
+            if (isDate(date)) {
+                return true
+            } else {
+                throw new BadRequestError('login must be a valid date')
+            }
+        })
         .withMessage('You must supply login'),
     body('age')
         .trim()
