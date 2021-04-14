@@ -197,11 +197,12 @@ router.put('/api/user', [
 ],
     validateRequest, async (req: Request, res: Response) => {
         const { login, password, age, id } = req.body;
-        let user = User.find(u => u.id === id && !u.isDeleted);
-        if (user) {
-            user = {
+        const userIndex = User.findIndex(u => u.id === id && !u.isDeleted);
+        if (userIndex !== -1) {
+            const user = {
                 login, password, age: +age, id, isDeleted: false
-            }
+            };
+            User[userIndex] = user;
             res.status(200).send(user);
         }
         throw new BadRequestError('User does not exist!!!');
